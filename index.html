@@ -3,163 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control IoT Global</title>
-    <!-- Tailwind CSS -->
+    <title>Cloud Control IoT - Sci-Fi Interface</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Iconos Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- SweetAlert2 para alertas bonitas -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
-        .glow-on { box-shadow: 0 0 20px #fbbf24; border-color: #fbbf24; }
+        :root {
+            --neon-cyan: #06b6d4;
+            --neon-blue: #3b82f6;
+            --neon-purple: #a855f7;
+        }
+
+        body {
+            background-color: #020617;
+            overflow-x: hidden;
+        }
+
+        /* Fondo dinámico animado */
+        .bg-cyber {
+            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #020617 100%);
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+        }
+
+        .grid-overlay {
+            background-image: linear-gradient(rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            perspective: 1000px;
+            transform: rotateX(45deg);
+            position: absolute;
+            bottom: -50%;
+            left: -50%;
+            right: -50%;
+            height: 200%;
+            z-index: -1;
+            animation: grid-move 20s linear infinite;
+        }
+
+        @keyframes grid-move {
+            from { transform: rotateX(45deg) translateY(0); }
+            to { transform: rotateX(45deg) translateY(30px); }
+        }
+
+        /* Glassmorphism avanzado */
         .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .glass-panel:hover {
+            transform: translateY(-5px) rotateX(2deg) rotateY(2deg);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+        }
+
+        /* Efecto Neón para estado ON */
+        .glow-on {
+            border-color: var(--neon-cyan) !important;
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.4), inset 0 0 10px rgba(6, 182, 212, 0.2);
+            animation: pulse-border 2s infinite;
+        }
+
+        @keyframes pulse-border {
+            0% { border-color: rgba(6, 182, 212, 0.4); }
+            50% { border-color: rgba(6, 182, 212, 1); }
+            100% { border-color: rgba(6, 182, 212, 0.4); }
+        }
+
+        /* Estilo para los botones tipo "Panel de Control" */
+        .btn-sci-fi {
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            transition: all 0.2s ease;
+        }
+
+        .btn-sci-fi:active {
+            transform: scale(0.95);
+        }
+
+        /* Animación de escaneo */
+        .scan-line {
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+            position: absolute;
+            top: 0;
+            left: 0;
+            animation: scan 4s linear infinite;
+            opacity: 0.3;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center bg-fixed">
+<body class="text-slate-100 min-h-screen font-sans">
     
-    <!-- Overlay oscuro para leer mejor -->
-    <div class="fixed inset-0 bg-slate-900/80 pointer-events-none"></div>
+    <div class="bg-cyber"></div>
+    <div class="grid-overlay"></div>
 
     <div class="relative z-10 max-w-md mx-auto p-4 min-h-screen flex flex-col">
         
-        <!-- Header -->
-        <header class="flex justify-between items-center py-6">
-            <div>
-                <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
-                    Cloud Control
+        <header class="flex justify-between items-center py-8 relative">
+            <div class="relative">
+                <div class="absolute -left-4 top-0 w-1 h-full bg-cyan-500 shadow-[0_0_10px_#06b6d4]"></div>
+                <h1 class="text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500">
+                    CLOUD CONTROL
                 </h1>
-                <p class="text-xs text-slate-400">Sistema IoT Remoto</p>
+                <p class="text-[10px] uppercase tracking-[0.3em] text-cyan-500/70 font-bold">Neural Link Active // IoT v2.0</p>
             </div>
-            <button onclick="openConfig()" class="p-2 rounded-full bg-slate-800 hover:bg-slate-700 transition border border-slate-600">
-                <i data-lucide="settings" class="w-5 h-5 text-slate-300"></i>
+            <button onclick="openConfig()" class="group relative p-3 rounded-none overflow-hidden border border-cyan-500/30 bg-cyan-500/5 hover:bg-cyan-500/20 transition-all">
+                <div class="absolute inset-0 opacity-20 group-hover:opacity-100 transition-opacity bg-[radial-gradient(circle,white_1px,transparent_1px)] bg-[size:4px_4px]"></div>
+                <i data-lucide="settings" class="w-6 h-6 text-cyan-400 group-hover:rotate-90 transition-transform duration-500"></i>
             </button>
         </header>
 
-        <!-- Estado de Conexión -->
-        <div id="statusIndicator" class="mb-8 flex items-center gap-3 bg-red-500/10 border border-red-500/20 p-3 rounded-lg backdrop-blur-sm">
-            <span class="relative flex h-3 w-3">
+        <div id="statusIndicator" class="mb-10 flex items-center gap-4 bg-slate-900/50 border-l-4 border-red-500 p-4 rounded-r-lg backdrop-blur-md relative overflow-hidden">
+            <div class="scan-line"></div>
+            <span class="relative flex h-4 w-4">
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                <span class="relative inline-flex rounded-full h-4 w-4 bg-red-600 shadow-[0_0_10px_#dc2626]"></span>
             </span>
-            <span class="text-sm font-medium text-red-400">Desconectado de la Nube</span>
+            <div class="flex flex-col">
+                <span class="text-[10px] uppercase text-slate-500 font-bold">System Status</span>
+                <span class="text-sm font-bold text-red-400 tracking-widest uppercase">Link Offline</span>
+            </div>
         </div>
 
-        <!-- Controles -->
-        <main class="space-y-6 flex-grow">
+        <main class="space-y-8 flex-grow">
             
-            <!-- Foco 1 -->
-            <div class="glass-panel p-6 rounded-2xl transition-all duration-300" id="card1">
-                <div class="flex justify-between items-start mb-4">
+            <div class="glass-panel p-6 rounded-none relative overflow-hidden" id="card1">
+                <div class="absolute top-0 right-0 p-1 bg-cyan-500/10 text-[8px] text-cyan-500/50 font-mono">NODE_01</div>
+                <div class="flex justify-between items-center mb-6">
                     <div>
-                        <h2 class="text-xl font-semibold">Sala Principal</h2>
-                        <span class="text-xs text-slate-400 font-mono">/casa/sala</span>
+                        <h2 class="text-xl font-bold tracking-tight text-cyan-50 px-2 border-l-2 border-cyan-500">SALA PRINCIPAL</h2>
+                        <span class="text-[10px] text-slate-500 font-mono mt-1 block tracking-tighter">PATH: /CASA/SALA</span>
                     </div>
-                    <i data-lucide="lightbulb" id="icon1" class="w-8 h-8 text-slate-600 transition-colors duration-300"></i>
+                    <div class="p-3 bg-slate-950/50 rounded-full border border-slate-800" id="iconContainer1">
+                        <i data-lucide="lightbulb" id="icon1" class="w-8 h-8 text-slate-700 transition-all duration-500"></i>
+                    </div>
                 </div>
                 
-                <div class="flex gap-3">
-                    <button onclick="updateState('sala', true)" class="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-900 font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition">
-                        ON
+                <div class="flex gap-4">
+                    <button onclick="updateState('sala', true)" class="btn-sci-fi flex-1 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black py-4 shadow-[0_0_15px_rgba(6,182,212,0.4)] transition-all">
+                        ACTIVATE
                     </button>
-                    <button onclick="updateState('sala', false)" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition">
-                        OFF
+                    <button onclick="updateState('sala', false)" class="btn-sci-fi flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-4 transition-all">
+                        SHUTDOWN
                     </button>
                 </div>
             </div>
 
-            <!-- Foco 2 -->
-            <div class="glass-panel p-6 rounded-2xl transition-all duration-300" id="card2">
-                <div class="flex justify-between items-start mb-4">
+            <div class="glass-panel p-6 rounded-none relative overflow-hidden" id="card2">
+                <div class="absolute top-0 right-0 p-1 bg-purple-500/10 text-[8px] text-purple-500/50 font-mono">NODE_02</div>
+                <div class="flex justify-between items-center mb-6">
                     <div>
-                        <h2 class="text-xl font-semibold">Laboratorio</h2>
-                        <span class="text-xs text-slate-400 font-mono">/casa/laboratorio</span>
+                        <h2 class="text-xl font-bold tracking-tight text-purple-50 px-2 border-l-2 border-purple-500">LABORATORIO</h2>
+                        <span class="text-[10px] text-slate-500 font-mono mt-1 block tracking-tighter">PATH: /CASA/LAB</span>
                     </div>
-                    <i data-lucide="zap" id="icon2" class="w-8 h-8 text-slate-600 transition-colors duration-300"></i>
+                    <div class="p-3 bg-slate-950/50 rounded-full border border-slate-800" id="iconContainer2">
+                        <i data-lucide="zap" id="icon2" class="w-8 h-8 text-slate-700 transition-all duration-500"></i>
+                    </div>
                 </div>
                 
-                <div class="flex gap-3">
-                    <button onclick="updateState('laboratorio', true)" class="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-slate-900 font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition">
-                        ON
+                <div class="flex gap-4">
+                    <button onclick="updateState('laboratorio', true)" class="btn-sci-fi flex-1 bg-purple-600 hover:bg-purple-500 text-slate-950 font-black py-4 shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all">
+                        POWER UP
                     </button>
-                    <button onclick="updateState('laboratorio', false)" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3 rounded-xl shadow-lg transform active:scale-95 transition">
-                        OFF
+                    <button onclick="updateState('laboratorio', false)" class="btn-sci-fi flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-4 transition-all">
+                        OFFLINE
                     </button>
                 </div>
             </div>
 
         </main>
 
-        <footer class="mt-8 text-center text-xs text-slate-500 font-mono">
-            IST Vida Nueva - Investigación
+        <footer class="mt-12 text-center border-t border-slate-800 pt-6">
+            <p class="text-[10px] tracking-[0.4em] text-slate-600 font-bold uppercase mb-2">AUTHORS</p>
+            <p class="text-xs text-cyan-500/60 font-mono">PILCO – VELASCO – TORO</p>
+            <p class="text-[9px] text-slate-700 mt-4">IST VIDA NUEVA - INVESTIGACIÓN</p>
         </footer>
     </div>
 
-    <!-- Modal de Configuración -->
-    <div id="configModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm hidden">
-        <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-11/12 max-w-md shadow-2xl">
-            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
-                <i data-lucide="database" class="w-5 h-5 text-blue-400"></i>
-                Configuración Firebase
+    <div id="configModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md hidden p-4">
+        <div class="glass-panel p-8 rounded-none w-full max-w-md border-t-4 border-cyan-500 relative">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
+            <h3 class="text-2xl font-black mb-2 flex items-center gap-3 text-cyan-400">
+                <i data-lucide="database" class="w-6 h-6"></i>
+                CORE CONFIG
             </h3>
-            <p class="text-sm text-slate-400 mb-4">Ingresa las credenciales de tu proyecto Firebase Realtime Database.</p>
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest mb-8">Establish secure uplink to Firebase</p>
             
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">API KEY</label>
-                    <input type="text" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-white">
+            <div class="space-y-6">
+                <div class="relative">
+                    <label class="block text-[10px] font-black text-cyan-500 mb-2 uppercase tracking-tighter">Encryption API Key</label>
+                    <input type="text" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-950/80 border border-slate-700 rounded-none p-4 text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none text-cyan-100 transition-all font-mono">
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">DATABASE URL</label>
-                    <input type="text" id="dbUrlInput" placeholder="https://proyecto.firebaseio.com" class="w-full bg-slate-800 border border-slate-600 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-white">
+                <div class="relative">
+                    <label class="block text-[10px] font-black text-cyan-500 mb-2 uppercase tracking-tighter">Database Endpoint URL</label>
+                    <input type="text" id="dbUrlInput" placeholder="https://..." class="w-full bg-slate-950/80 border border-slate-700 rounded-none p-4 text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none text-cyan-100 transition-all font-mono">
                 </div>
             </div>
 
-            <div class="mt-6 flex gap-3">
-                <button onclick="closeConfig()" class="flex-1 py-3 text-slate-400 hover:text-white transition">Cancelar</button>
-                <button onclick="saveConfig()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl">Guardar y Conectar</button>
+            <div class="mt-10 flex gap-4">
+                <button onclick="closeConfig()" class="flex-1 py-4 text-xs font-bold text-slate-500 hover:text-white transition-colors uppercase tracking-widest">Abort</button>
+                <button onclick="saveConfig()" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black py-4 btn-sci-fi">INITIALIZE</button>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDK Modular -->
     <script type="module">
+        // Lógica original preservada [cite: 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         let app, db;
-        
-        // Exponer funciones al scope global para los botones HTML
         window.openConfig = () => document.getElementById('configModal').classList.remove('hidden');
         window.closeConfig = () => document.getElementById('configModal').classList.add('hidden');
         
         window.saveConfig = () => {
             const apiKey = document.getElementById('apiKeyInput').value.trim();
             const dbUrl = document.getElementById('dbUrlInput').value.trim();
-            
-            if(!apiKey || !dbUrl) return Swal.fire('Error', 'Faltan datos', 'error');
-
+            if(!apiKey || !dbUrl) return Swal.fire({title: 'System Error', text: 'Missing credentials', icon: 'error', background: '#0f172a', color: '#fff'});
             localStorage.setItem('iot_api_key', apiKey);
             localStorage.setItem('iot_db_url', dbUrl);
-            
             initFirebase(apiKey, dbUrl);
             closeConfig();
         };
 
         window.updateState = (foco, estado) => {
-            if(!db) return Swal.fire('Error', 'Configura Firebase primero', 'warning');
-            
-            // Escribir en la base de datos (/casa/sala o /casa/laboratorio)
+            if(!db) return Swal.fire({title: 'Connection Error', text: 'Configure Firebase uplink', icon: 'warning', background: '#0f172a', color: '#fff'});
             set(ref(db, 'casa/' + foco), estado)
-                .then(() => {
-                    // Feedback háptico opcional
-                    if(navigator.vibrate) navigator.vibrate(50);
-                })
+                .then(() => { if(navigator.vibrate) navigator.vibrate(50); })
                 .catch((error) => Swal.fire('Error', error.message, 'error'));
         };
 
@@ -168,10 +250,7 @@
                 const firebaseConfig = { apiKey, databaseURL };
                 app = initializeApp(firebaseConfig);
                 db = getDatabase(app);
-
-                // Escuchar cambios en tiempo real
                 const casaRef = ref(db, 'casa');
-                
                 onValue(casaRef, (snapshot) => {
                     updateStatusUI(true);
                     const data = snapshot.val();
@@ -183,10 +262,9 @@
                     console.error(error);
                     updateStatusUI(false);
                 });
-
             } catch (e) {
-                console.error(e);
-                Swal.fire('Error', 'Credenciales inválidas', 'error');
+                updateStatusUI(false);
+                Swal.fire('Error', 'Invalid Credentials', 'error');
             }
         }
 
@@ -195,50 +273,46 @@
             const icon = document.getElementById(iconId);
             
             if(state) {
-                // Estado ON
                 card.classList.add('glow-on');
-                card.classList.replace('border-slate-700', 'border-yellow-500');
-                icon.classList.add('text-yellow-400', 'fill-current');
-                icon.classList.remove('text-slate-600');
+                icon.classList.add('text-cyan-400', 'drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]');
+                icon.classList.remove('text-slate-700');
             } else {
-                // Estado OFF
                 card.classList.remove('glow-on');
-                card.classList.replace('border-yellow-500', 'border-slate-700');
-                icon.classList.remove('text-yellow-400', 'fill-current');
-                icon.classList.add('text-slate-600');
+                icon.classList.remove('text-cyan-400', 'drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]');
+                icon.classList.add('text-slate-700');
             }
         }
 
         function updateStatusUI(connected) {
             const el = document.getElementById('statusIndicator');
             if(connected) {
-                el.className = "mb-8 flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-lg backdrop-blur-sm transition-all";
+                el.className = "mb-10 flex items-center gap-4 bg-emerald-500/5 border-l-4 border-emerald-500 p-4 rounded-r-lg backdrop-blur-md relative overflow-hidden transition-all";
                 el.innerHTML = `
-                    <span class="relative flex h-3 w-3">
+                    <div class="scan-line" style="background: linear-gradient(90deg, transparent, #10b981, transparent)"></div>
+                    <span class="relative flex h-4 w-4">
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        <span class="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 shadow-[0_0_10px_#10b981]"></span>
                     </span>
-                    <span class="text-sm font-medium text-emerald-400">Conectado a Firebase</span>
-                `;
+                    <div class="flex flex-col">
+                        <span class="text-[10px] uppercase text-slate-500 font-bold">System Status</span>
+                        <span class="text-sm font-bold text-emerald-400 tracking-widest uppercase">Link Stable</span>
+                    </div>`;
             } else {
-                el.className = "mb-8 flex items-center gap-3 bg-red-500/10 border border-red-500/20 p-3 rounded-lg backdrop-blur-sm transition-all";
-                el.innerHTML = `<span class="h-3 w-3 rounded-full bg-red-500"></span><span class="text-sm font-medium text-red-400">Desconectado</span>`;
+                el.className = "mb-10 flex items-center gap-4 bg-red-500/5 border-l-4 border-red-500 p-4 rounded-r-lg backdrop-blur-md relative overflow-hidden transition-all";
+                el.innerHTML = `<span class="h-4 w-4 rounded-full bg-red-600 shadow-[0_0_10px_#dc2626]"></span><div class="flex flex-col"><span class="text-[10px] uppercase text-slate-500 font-bold">System Status</span><span class="text-sm font-bold text-red-400 tracking-widest uppercase">Link Offline</span></div>`;
             }
         }
 
-        // Cargar config guardada al inicio
         lucide.createIcons();
         const savedKey = localStorage.getItem('iot_api_key');
         const savedUrl = localStorage.getItem('iot_db_url');
-        
         if(savedKey && savedUrl) {
             document.getElementById('apiKeyInput').value = savedKey;
             document.getElementById('dbUrlInput').value = savedUrl;
             initFirebase(savedKey, savedUrl);
         } else {
-            setTimeout(openConfig, 1000); // Abrir config si no hay datos
+            setTimeout(openConfig, 1000);
         }
-
     </script>
 </body>
 </html>
