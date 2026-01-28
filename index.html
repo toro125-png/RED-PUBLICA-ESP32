@@ -1,318 +1,580 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
+<html lang="es"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud Control IoT - Sci-Fi Interface</title>
+    <title>TUVN CORE - INDUSTRIAL INTERFACE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&amp;family=Rajdhani:wght@300;500;700&amp;display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --neon-cyan: #06b6d4;
-            --neon-blue: #3b82f6;
-            --neon-purple: #a855f7;
+            --neon-cyan: #00f2ff;
+            --neon-purple: #bc13fe;
+            --neon-blue: #00d2ff;
+            --neon-red: #ff0055;
+            --neon-green: #39ff14;
+            --bg-dark: #020617;
+            --panel-bg: rgba(10, 15, 28, 0.85);
         }
 
         body {
-            background-color: #020617;
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Rajdhani', sans-serif;
             overflow-x: hidden;
+            margin: 0;
         }
 
-        /* Fondo dinámico animado */
-        .bg-cyber {
-            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #020617 100%);
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+        .tech-font { font-family: 'Orbitron', sans-serif; }
+
+        .screen {
             position: fixed;
             inset: 0;
-            z-index: -1;
+            display: none;
+            overflow-y: auto;
+            z-index: 10;
         }
 
-        .grid-overlay {
-            background-image: linear-gradient(rgba(6, 182, 212, 0.05) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
-            background-size: 30px 30px;
-            perspective: 1000px;
-            transform: rotateX(45deg);
-            position: absolute;
-            bottom: -50%;
-            left: -50%;
-            right: -50%;
-            height: 200%;
+        .screen.active {
+            display: flex;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .bg-grid {
+            position: fixed;
+            top: 0; left: 0; width: 200%; height: 200%;
+            background-image: 
+                linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: rotateX(45deg) translateY(-20%);
             z-index: -1;
             animation: grid-move 20s linear infinite;
         }
 
         @keyframes grid-move {
-            from { transform: rotateX(45deg) translateY(0); }
-            to { transform: rotateX(45deg) translateY(30px); }
+            from { transform: rotateX(45deg) translateY(-50%); }
+            to { transform: rotateX(45deg) translateY(0%); }
         }
 
-        /* Glassmorphism avanzado */
         .glass-panel {
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(15, 23, 42, 0.8);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(6, 182, 212, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
         }
 
-        .glass-panel:hover {
-            transform: translateY(-5px) rotateX(2deg) rotateY(2deg);
+        .btn-3d { 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            transform-style: preserve-3d;
+            position: relative; 
+        }
+
+        .btn-3d:hover:not(:disabled) { 
+            transform: translateY(-5px) rotateX(10deg);
+            box-shadow: 0 15px 30px rgba(0, 242, 255, 0.3); 
             border-color: var(--neon-cyan);
-            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
         }
 
-        /* Efecto Neón para estado ON */
-        .glow-on {
-            border-color: var(--neon-cyan) !important;
-            box-shadow: 0 0 25px rgba(6, 182, 212, 0.4), inset 0 0 10px rgba(6, 182, 212, 0.2);
-            animation: pulse-border 2s infinite;
+        .hologram-text { 
+            text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
+            animation: flicker 3s infinite; 
         }
 
-        @keyframes pulse-border {
-            0% { border-color: rgba(6, 182, 212, 0.4); }
-            50% { border-color: rgba(6, 182, 212, 1); }
-            100% { border-color: rgba(6, 182, 212, 0.4); }
+        @keyframes flicker { 0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; } 20%, 22%, 24%, 55% { opacity: 0.5; } }
+
+        .scifi-panel {
+            background: var(--panel-bg);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
         }
 
-        /* Estilo para los botones tipo "Panel de Control" */
-        .btn-sci-fi {
-            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
-            transition: all 0.2s ease;
-        }
-
-        .btn-sci-fi:active {
-            transform: scale(0.95);
-        }
-
-        /* Animación de escaneo */
-        .scan-line {
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+        .scifi-panel::before {
+            content: "";
             position: absolute;
-            top: 0;
-            left: 0;
-            animation: scan 4s linear infinite;
-            opacity: 0.3;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+            animation: pulse-glow 2s infinite;
         }
 
-        @keyframes scan {
-            0% { top: 0; }
-            100% { top: 100%; }
+        .panel-blue { --border-color: var(--neon-blue); box-shadow: 0 0 15px rgba(0, 210, 255, 0.1); }
+        .panel-red { --border-color: var(--neon-red); box-shadow: 0 0 15px rgba(255, 0, 85, 0.1); }
+        .panel-master { --border-color: var(--neon-green); border: 1px solid rgba(57, 255, 20, 0.2); }
+
+        @keyframes pulse-glow { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
+
+        .glass-inner { 
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px; 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+        }
+
+        .value-glow { text-shadow: 0 0 10px var(--border-color); }
+
+        .scan-line {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, transparent 0%, rgba(57, 255, 20, 0.05) 50%, transparent 100%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            animation: scan 4s linear infinite;
+        }
+
+        @keyframes scan { from { transform: translateY(-100%); } to { transform: translateY(100%); } }
+
+        .thermal-bar {
+            position: fixed;
+            right: 20px; top: 50%; transform: translateY(-50%);
+            width: 12px; height: 200px; border-radius: 20px;
+            background: #1e293b; border: 1px solid rgba(255,255,255,0.1); z-index: 50;
+        }
+
+        .thermal-indicator { position: absolute; bottom: 0; width: 100%; border-radius: 20px; transition: all 0.5s ease; }
+
+        .operario-mode .interactive-element {
+            pointer-events: none !important;
+            opacity: 0.4;
+            filter: grayscale(1);
+            cursor: not-allowed;
         }
     </style>
-</head>
-<body class="text-slate-100 min-h-screen font-sans">
-    
-    <div class="bg-cyber"></div>
-    <div class="grid-overlay"></div>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.container{width:100%}@media (min-width: 640px){.container{max-width:640px}}@media (min-width: 768px){.container{max-width:768px}}@media (min-width: 1024px){.container{max-width:1024px}}@media (min-width: 1280px){.container{max-width:1280px}}@media (min-width: 1536px){.container{max-width:1536px}}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0px}.-left-16{left:-4rem}.bottom-0{bottom:0px}.left-0{left:0px}.top-0{top:0px}.z-10{z-index:10}.z-\[100\]{z-index:100}.z-\[110\]{z-index:110}.mx-auto{margin-left:auto;margin-right:auto}.mb-1{margin-bottom:0.25rem}.mb-12{margin-bottom:3rem}.mb-2{margin-bottom:0.5rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mt-2{margin-top:0.5rem}.mt-4{margin-top:1rem}.mt-8{margin-top:2rem}.block{display:block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-1{height:0.25rem}.h-10{height:2.5rem}.h-2{height:0.5rem}.h-5{height:1.25rem}.h-6{height:1.5rem}.h-8{height:2rem}.w-0{width:0px}.w-10{width:2.5rem}.w-2{width:0.5rem}.w-5{width:1.25rem}.w-6{width:1.5rem}.w-64{width:16rem}.w-8{width:2rem}.w-96{width:24rem}.w-\[450px\]{width:450px}.w-full{width:100%}.max-w-2xl{max-width:42rem}.flex-1{flex:1 1 0%}.flex-grow{flex-grow:1}.skew-x-\[-15deg\]{--tw-skew-x:-15deg;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.skew-x-\[15deg\]{--tw-skew-x:15deg;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes ping{75%, 100%{transform:scale(2);opacity:0}}.animate-ping{animation:ping 1s cubic-bezier(0, 0, 0.2, 1) infinite}@keyframes pulse{50%{opacity:.5}}.animate-pulse{animation:pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.justify-around{justify-content:space-around}.gap-1{gap:0.25rem}.gap-12{gap:3rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.gap-8{gap:2rem}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.rounded{border-radius:0.25rem}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-none{border-radius:0px}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-l{border-left-width:1px}.border-t{border-top-width:1px}.border-t-4{border-top-width:4px}.border-blue-400\/50{border-color:rgb(96 165 250 / 0.5)}.border-blue-500\/30{border-color:rgb(59 130 246 / 0.3)}.border-blue-500\/50{border-color:rgb(59 130 246 / 0.5)}.border-cyan-500\/30{border-color:rgb(6 182 212 / 0.3)}.border-cyan-500\/50{border-color:rgb(6 182 212 / 0.5)}.border-emerald-500\/30{border-color:rgb(16 185 129 / 0.3)}.border-purple-500\/50{border-color:rgb(168 85 247 / 0.5)}.border-red-500\/30{border-color:rgb(239 68 68 / 0.3)}.border-red-500\/50{border-color:rgb(239 68 68 / 0.5)}.border-white\/10{border-color:rgb(255 255 255 / 0.1)}.border-white\/5{border-color:rgb(255 255 255 / 0.05)}.border-t-cyan-500{--tw-border-opacity:1;border-top-color:rgb(6 182 212 / var(--tw-border-opacity, 1))}.bg-black\/60{background-color:rgb(0 0 0 / 0.6)}.bg-black\/80{background-color:rgb(0 0 0 / 0.8)}.bg-blue-600{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.bg-blue-600\/20{background-color:rgb(37 99 235 / 0.2)}.bg-cyan-500{--tw-bg-opacity:1;background-color:rgb(6 182 212 / var(--tw-bg-opacity, 1))}.bg-cyan-600{--tw-bg-opacity:1;background-color:rgb(8 145 178 / var(--tw-bg-opacity, 1))}.bg-emerald-500\/10{background-color:rgb(16 185 129 / 0.1)}.bg-emerald-950\/10{background-color:rgb(2 44 34 / 0.1)}.bg-purple-500{--tw-bg-opacity:1;background-color:rgb(168 85 247 / var(--tw-bg-opacity, 1))}.bg-purple-600\/20{background-color:rgb(147 51 234 / 0.2)}.bg-red-600{--tw-bg-opacity:1;background-color:rgb(220 38 38 / var(--tw-bg-opacity, 1))}.bg-red-600\/20{background-color:rgb(220 38 38 / 0.2)}.bg-slate-900{--tw-bg-opacity:1;background-color:rgb(15 23 42 / var(--tw-bg-opacity, 1))}.bg-slate-900\/50{background-color:rgb(15 23 42 / 0.5)}.bg-slate-950\/80{background-color:rgb(2 6 23 / 0.8)}.bg-emerald-500{--tw-bg-opacity:1;background-color:rgb(16 185 129 / var(--tw-bg-opacity, 1))}.p-10{padding:2.5rem}.p-2{padding:0.5rem}.p-3{padding:0.75rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-10{padding-left:2.5rem;padding-right:2.5rem}.px-12{padding-left:3rem;padding-right:3rem}.px-4{padding-left:1rem;padding-right:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-4{padding-top:1rem;padding-bottom:1rem}.py-6{padding-top:1.5rem;padding-bottom:1.5rem}.py-8{padding-top:2rem;padding-bottom:2rem}.pl-4{padding-left:1rem}.pt-4{padding-top:1rem}.text-center{text-align:center}.text-right{text-align:right}.text-2xl{font-size:1.5rem;line-height:2rem}.text-6xl{font-size:3.75rem;line-height:1}.text-7xl{font-size:4.5rem;line-height:1}.text-\[10px\]{font-size:10px}.text-\[8px\]{font-size:8px}.text-\[9px\]{font-size:9px}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-black{font-weight:900}.font-bold{font-weight:700}.uppercase{text-transform:uppercase}.italic{font-style:italic}.tracking-\[0\.2em\]{letter-spacing:0.2em}.tracking-\[0\.4em\]{letter-spacing:0.4em}.tracking-\[0\.5em\]{letter-spacing:0.5em}.tracking-tighter{letter-spacing:-0.05em}.tracking-widest{letter-spacing:0.1em}.text-black{--tw-text-opacity:1;color:rgb(0 0 0 / var(--tw-text-opacity, 1))}.text-blue-300\/50{color:rgb(147 197 253 / 0.5)}.text-blue-300\/60{color:rgb(147 197 253 / 0.6)}.text-blue-400{--tw-text-opacity:1;color:rgb(96 165 250 / var(--tw-text-opacity, 1))}.text-blue-500{--tw-text-opacity:1;color:rgb(59 130 246 / var(--tw-text-opacity, 1))}.text-cyan-400{--tw-text-opacity:1;color:rgb(34 211 238 / var(--tw-text-opacity, 1))}.text-emerald-300{--tw-text-opacity:1;color:rgb(110 231 183 / var(--tw-text-opacity, 1))}.text-emerald-300\/50{color:rgb(110 231 183 / 0.5)}.text-emerald-400{--tw-text-opacity:1;color:rgb(52 211 153 / var(--tw-text-opacity, 1))}.text-emerald-500\/50{color:rgb(16 185 129 / 0.5)}.text-purple-500{--tw-text-opacity:1;color:rgb(168 85 247 / var(--tw-text-opacity, 1))}.text-red-500{--tw-text-opacity:1;color:rgb(239 68 68 / var(--tw-text-opacity, 1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139 / var(--tw-text-opacity, 1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.text-white\/50{color:rgb(255 255 255 / 0.5)}.text-emerald-500{--tw-text-opacity:1;color:rgb(16 185 129 / var(--tw-text-opacity, 1))}.opacity-50{opacity:0.5}.opacity-80{opacity:0.8}.shadow-\[0_0_15px_\#00f2ff\]{--tw-shadow:0 0 15px #00f2ff;--tw-shadow-colored:0 0 15px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-\[0_0_8px_\#10b981\]{--tw-shadow:0 0 8px #10b981;--tw-shadow-colored:0 0 8px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.outline-none{outline:2px solid transparent;outline-offset:2px}.backdrop-blur-2xl{--tw-backdrop-blur:blur(40px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-xl{--tw-backdrop-blur:blur(24px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-colors{transition-property:color, background-color, border-color, fill, stroke, -webkit-text-decoration-color;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, -webkit-text-decoration-color;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-500{transition-duration:500ms}.hover\:bg-blue-400:hover{--tw-bg-opacity:1;background-color:rgb(96 165 250 / var(--tw-bg-opacity, 1))}.hover\:bg-blue-500\/20:hover{background-color:rgb(59 130 246 / 0.2)}.hover\:bg-blue-600:hover{--tw-bg-opacity:1;background-color:rgb(37 99 235 / var(--tw-bg-opacity, 1))}.hover\:bg-cyan-400:hover{--tw-bg-opacity:1;background-color:rgb(34 211 238 / var(--tw-bg-opacity, 1))}.hover\:bg-purple-600:hover{--tw-bg-opacity:1;background-color:rgb(147 51 234 / var(--tw-bg-opacity, 1))}.hover\:bg-red-500\/20:hover{background-color:rgb(239 68 68 / 0.2)}.hover\:bg-red-600:hover{--tw-bg-opacity:1;background-color:rgb(220 38 38 / var(--tw-bg-opacity, 1))}.hover\:text-white:hover{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.focus\:border-blue-400:focus{--tw-border-opacity:1;border-color:rgb(96 165 250 / var(--tw-border-opacity, 1))}.focus\:border-cyan-400:focus{--tw-border-opacity:1;border-color:rgb(34 211 238 / var(--tw-border-opacity, 1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.group:hover .group-hover\:w-full{width:100%}.group:hover .group-hover\:text-cyan-400{--tw-text-opacity:1;color:rgb(34 211 238 / var(--tw-text-opacity, 1))}.group:hover .group-hover\:text-purple-400{--tw-text-opacity:1;color:rgb(192 132 252 / var(--tw-text-opacity, 1))}@media (min-width: 768px){.md\:mt-0{margin-top:0px}.md\:block{display:block}.md\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.md\:flex-row{flex-direction:row}}@media (min-width: 1024px){.lg\:col-span-2{grid-column:span 2 / span 2}.lg\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.lg\:grid-cols-4{grid-template-columns:repeat(4, minmax(0, 1fr))}}</style></head>
+<body>
 
-    <div class="relative z-10 max-w-md mx-auto p-4 min-h-screen flex flex-col">
-        
-        <header class="flex justify-between items-center py-8 relative">
-            <div class="relative">
-                <div class="absolute -left-4 top-0 w-1 h-full bg-cyan-500 shadow-[0_0_10px_#06b6d4]"></div>
-                <h1 class="text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500">
-                    CLOUD CONTROL
-                </h1>
-                <p class="text-[10px] uppercase tracking-[0.3em] text-cyan-500/70 font-bold">Neural Link Active // IoT v2.0</p>
-            </div>
-            <button onclick="openConfig()" class="group relative p-3 rounded-none overflow-hidden border border-cyan-500/30 bg-cyan-500/5 hover:bg-cyan-500/20 transition-all">
-                <div class="absolute inset-0 opacity-20 group-hover:opacity-100 transition-opacity bg-[radial-gradient(circle,white_1px,transparent_1px)] bg-[size:4px_4px]"></div>
-                <i data-lucide="settings" class="w-6 h-6 text-cyan-400 group-hover:rotate-90 transition-transform duration-500"></i>
-            </button>
-        </header>
+    <div class="bg-grid"></div>
 
-        <div id="statusIndicator" class="mb-10 flex items-center gap-4 bg-slate-900/50 border-l-4 border-red-500 p-4 rounded-r-lg backdrop-blur-md relative overflow-hidden">
-            <div class="scan-line"></div>
-            <span class="relative flex h-4 w-4">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-4 w-4 bg-red-600 shadow-[0_0_10px_#dc2626]"></span>
-            </span>
-            <div class="flex flex-col">
-                <span class="text-[10px] uppercase text-slate-500 font-bold">System Status</span>
-                <span class="text-sm font-bold text-red-400 tracking-widest uppercase">Link Offline</span>
+    <div id="homeScreen" class="screen flex-col items-center justify-center">
+        <div class="text-center mb-12">
+            <h1 class="orbitron text-6xl font-black hologram-text mb-4">BIENVENIDO AL SISTEMA</h1>
+            <div class="h-1 w-64 bg-cyan-500 mx-auto rounded-full shadow-[0_0_15px_#00f2ff]"></div>
+        </div>
+
+        <div class="glass-panel p-8 rounded-xl border-t-4 border-t-cyan-500 mb-12 text-center w-full max-w-2xl">
+            <h3 class="orbitron text-xs tracking-[0.4em] text-cyan-400 mb-6 uppercase">Core Development Unit</h3>
+            <div class="flex justify-around items-center">
+                <span class="dev-name font-bold text-xl tracking-widest">PILCO</span>
+                <span class="w-2 h-2 bg-purple-500 rounded-full animate-ping"></span>
+                <span class="dev-name font-bold text-xl tracking-widest">VELASCO</span>
+                <span class="w-2 h-2 bg-purple-500 rounded-full animate-ping"></span>
+                <span class="dev-name font-bold text-xl tracking-widest">TORO</span>
             </div>
         </div>
 
-        <main class="space-y-8 flex-grow">
-            
-            <div class="glass-panel p-6 rounded-none relative overflow-hidden" id="card1">
-                <div class="absolute top-0 right-0 p-1 bg-cyan-500/10 text-[8px] text-cyan-500/50 font-mono">NODE_01</div>
-                <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h2 class="text-xl font-bold tracking-tight text-cyan-50 px-2 border-l-2 border-cyan-500">SALA PRINCIPAL</h2>
-                        <span class="text-[10px] text-slate-500 font-mono mt-1 block tracking-tighter">PATH: /CASA/SALA</span>
-                    </div>
-                    <div class="p-3 bg-slate-950/50 rounded-full border border-slate-800" id="iconContainer1">
-                        <i data-lucide="lightbulb" id="icon1" class="w-8 h-8 text-slate-700 transition-all duration-500"></i>
-                    </div>
-                </div>
-                
-                <div class="flex gap-4">
-                    <button onclick="updateState('sala', true)" class="btn-sci-fi flex-1 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black py-4 shadow-[0_0_15px_rgba(6,182,212,0.4)] transition-all">
-                        ACTIVATE
-                    </button>
-                    <button onclick="updateState('sala', false)" class="btn-sci-fi flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-4 transition-all">
-                        SHUTDOWN
-                    </button>
-                </div>
+        <div class="flex flex-col items-center gap-8">
+            <div class="flex gap-8">
+                <button onclick="openAuth('ADMINISTRADOR')" class="btn-3d glass-panel px-12 py-6 rounded-lg group">
+                    <span class="orbitron text-xl font-bold tracking-widest group-hover:text-cyan-400 transition-colors">ADMINISTRADOR</span>
+                    <div class="absolute bottom-0 left-0 h-1 w-0 bg-cyan-500 group-hover:w-full transition-all duration-500"></div>
+                </button>
+
+                <button onclick="openAuth('OPERARIO')" class="btn-3d glass-panel px-12 py-6 rounded-lg group">
+                    <span class="orbitron text-xl font-bold tracking-widest group-hover:text-purple-400 transition-colors">OPERARIO</span>
+                    <div class="absolute bottom-0 left-0 h-1 w-0 bg-purple-500 group-hover:w-full transition-all duration-500"></div>
+                </button>
             </div>
 
-            <div class="glass-panel p-6 rounded-none relative overflow-hidden" id="card2">
-                <div class="absolute top-0 right-0 p-1 bg-purple-500/10 text-[8px] text-purple-500/50 font-mono">NODE_02</div>
-                <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h2 class="text-xl font-bold tracking-tight text-purple-50 px-2 border-l-2 border-purple-500">LABORATORIO</h2>
-                        <span class="text-[10px] text-slate-500 font-mono mt-1 block tracking-tighter">PATH: /CASA/LAB</span>
-                    </div>
-                    <div class="p-3 bg-slate-950/50 rounded-full border border-slate-800" id="iconContainer2">
-                        <i data-lucide="zap" id="icon2" class="w-8 h-8 text-slate-700 transition-all duration-500"></i>
-                    </div>
+            <button id="connectBtn" onclick="openFirebaseModal()" class="group relative px-10 py-4 bg-slate-900 text-white rounded-none overflow-hidden transition-all border border-blue-500/50 skew-x-[-15deg] opacity-80" disabled="">
+                <div class="relative flex items-center gap-3 tech-font font-bold skew-x-[15deg]">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="wifi" aria-hidden="true" id="btnIcon" class="lucide lucide-wifi w-5 h-5 text-blue-400"><path d="M12 20h.01"></path><path d="M2 8.82a15 15 0 0 1 20 0"></path><path d="M5 12.859a10 10 0 0 1 14 0"></path><path d="M8.5 16.429a5 5 0 0 1 7 0"></path></svg>
+                    <span id="btnText" class="tracking-[0.2em] text-emerald-400">SISTEMA CONECTADO</span>
                 </div>
-                
-                <div class="flex gap-4">
-                    <button onclick="updateState('laboratorio', true)" class="btn-sci-fi flex-1 bg-purple-600 hover:bg-purple-500 text-slate-950 font-black py-4 shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-all">
-                        POWER UP
-                    </button>
-                    <button onclick="updateState('laboratorio', false)" class="btn-sci-fi flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-4 transition-all">
-                        OFFLINE
-                    </button>
+            </button>
+        </div>
+    </div>
+
+    <div id="firebaseModal" class="fixed inset-0 z-[110] flex items-center justify-center backdrop-blur-2xl hidden">
+        <div class="glass-panel p-10 rounded-2xl border-2 border-blue-500/50 w-[450px] relative overflow-hidden">
+            <div class="scan-line"></div>
+            <h2 class="orbitron text-2xl text-center mb-6 text-blue-400">CONFIGURACIÓN FIREBASE</h2>
+            <div class="space-y-4 relative z-10">
+                <div>
+                    <label class="text-[10px] tech-font text-blue-300/50 uppercase block mb-1">API KEY</label>
+                    <input type="text" id="fbApiKey" placeholder="AIzaSy..." class="w-full bg-slate-950/80 border border-blue-500/30 p-3 rounded text-sm orbitron focus:border-blue-400 outline-none text-white">
+                </div>
+                <div>
+                    <label class="text-[10px] tech-font text-blue-300/50 uppercase block mb-1">DATABASE URL</label>
+                    <input type="text" id="fbDbUrl" placeholder="https://your-db.firebaseio.com" class="w-full bg-slate-950/80 border border-blue-500/30 p-3 rounded text-sm orbitron focus:border-blue-400 outline-none text-white">
+                </div>
+                <div class="flex gap-4 pt-4">
+                    <button onclick="closeFirebaseModal()" class="flex-1 py-3 hover:bg-red-500/20 transition-all rounded text-xs tech-font font-bold uppercase border border-red-500/30">Cerrar</button>
+                    <button onclick="establishConnection()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-400 transition-all rounded text-xs tech-font font-bold text-black uppercase">Conectar</button>
                 </div>
             </div>
+        </div>
+    </div>
 
+    <div id="passwordModal" class="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-xl hidden">
+        <div class="glass-panel p-10 rounded-2xl border-2 border-cyan-500/50 w-96">
+            <h2 id="modalTitle" class="orbitron text-2xl text-center mb-6 text-cyan-400">ACCESO ADMINISTRADOR</h2>
+            <input type="password" id="passInput" placeholder="ENTER ACCESS KEY" class="w-full bg-slate-900 border border-cyan-500/30 p-4 rounded text-center orbitron tracking-widest focus:outline-none focus:border-cyan-400 mb-6">
+            <div class="flex gap-4">
+                <button onclick="closeAuth()" class="flex-1 py-2 hover:bg-red-500/20 transition-all rounded text-sm uppercase font-bold">Cancelar</button>
+                <button onclick="verifyPass()" class="flex-1 py-2 bg-cyan-600 hover:bg-cyan-400 transition-all rounded text-sm uppercase font-bold text-black">Verificar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainPanel" class="screen flex-col active">
+        <div class="thermal-bar">
+            <div id="thermalFill" class="thermal-indicator" style="height: 0%; background: var(--neon-blue);"></div>
+            <div class="absolute -left-16 top-0 text-[10px] tech-font text-white/50">ESTADO</div>
+        </div>
+
+        <header class="relative border-b border-blue-500/30 bg-black/60 backdrop-blur-md w-full">
+            <div class="container mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center relative z-10">
+                <div class="flex items-center gap-4">
+                    <div class="bg-slate-900 p-2 rounded-lg border border-blue-400/50">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="shield-check" aria-hidden="true" class="lucide lucide-shield-check w-8 h-8 text-blue-400"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tighter tech-font text-blue-400">TUVN <span class="text-white">CORE</span></h1>
+                        <p id="roleLabel" class="text-[9px] text-blue-300/60 font-bold tracking-[0.4em] uppercase">ADMINISTRATOR CONTROL PANEL</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <button onclick="switchToOperator()" class="px-6 py-2 bg-purple-600/20 text-purple-500 border border-purple-500/50 rounded-full hover:bg-purple-600 hover:text-white transition-all text-xs font-bold tech-font">OPERARIO</button>
+                    <button onclick="switchToAdmin()" class="px-6 py-2 bg-blue-600/20 text-blue-500 border border-blue-500/50 rounded-full hover:bg-blue-600 hover:text-white transition-all text-xs font-bold tech-font">ADMIN</button>
+                    <button onclick="logout()" class="px-6 py-2 bg-red-600/20 text-red-500 border border-red-500/50 rounded-full hover:bg-red-600 hover:text-white transition-all text-xs font-bold tech-font">LOGOUT</button>
+                </div>
+
+                <div class="mt-4 md:mt-0 flex items-center gap-6 bg-slate-900/50 p-3 rounded-lg border border-white/5">
+                    <div class="text-right">
+                        <p id="dateDisplay" class="text-[9px] uppercase tracking-tighter opacity-50">miércoles, 28 de enero de 2026</p>
+                        <p id="timeDisplay" class="text-xl font-bold tech-font text-white">9:45:32</p>
+                    </div>
+                    <div class="flex flex-col items-center gap-1 border-l border-white/10 pl-4">
+                        <div id="staticDot" class="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse"></div>
+                        <span id="statusText" class="text-[9px] font-bold tech-font text-emerald-500">ONLINE</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-grow container mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="sensorContainer"></div>
+
+            <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 scifi-panel panel-master p-6 bg-emerald-950/10 relative">
+                    <div class="scan-line"></div>
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                        <div class="flex items-center gap-4">
+                            <div class="p-4 rounded-full bg-emerald-500/10 border border-emerald-500/30 animate-pulse">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="cpu" aria-hidden="true" class="lucide lucide-cpu w-10 h-10 text-emerald-400"><path d="M12 20v2"></path><path d="M12 2v2"></path><path d="M17 20v2"></path><path d="M17 2v2"></path><path d="M2 12h2"></path><path d="M2 17h2"></path><path d="M2 7h2"></path><path d="M20 12h2"></path><path d="M20 17h2"></path><path d="M20 7h2"></path><path d="M7 20v2"></path><path d="M7 2v2"></path><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="8" y="8" width="8" height="8" rx="1"></rect></svg>
+                            </div>
+                            <div>
+                                <h2 class="tech-font text-xl font-bold text-emerald-400 uppercase">Temperatura Promedio</h2>
+                                <p class="text-[10px] text-emerald-300/50 tracking-widest uppercase font-bold italic">Master System Summary</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-12">
+                            <div class="text-center">
+                                <span id="valAvg" class="text-7xl font-black tech-font text-emerald-400 value-glow" style="--border-color: var(--neon-green)">--</span>
+                                <span class="text-2xl text-emerald-300 tech-font">°C</span>
+                            </div>
+                            <div class="hidden md:block w-64 glass-inner p-3">
+                                <canvas id="chartAvg" height="105" style="display: block; box-sizing: border-box; height: 105.1px; width: 210.2px;" width="210"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="scifi-panel panel-blue p-6 flex flex-col justify-center gap-4">
+                    <h3 class="tech-font text-xs font-bold text-blue-400 mb-2 uppercase tracking-tighter">Control de Actuadores</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="toggleActuator('AC1')" id="btnAC1" class="interactive-element glass-inner p-4 flex flex-col items-center gap-2 hover:bg-blue-500/20 transition-all border border-white/10">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="fan" aria-hidden="true" class="lucide lucide-fan w-6 h-6 text-slate-400" id="iconAC1"><path d="M10.827 16.379a6.082 6.082 0 0 1-8.618-7.002l5.412 1.45a6.082 6.082 0 0 1 7.002-8.618l-1.45 5.412a6.082 6.082 0 0 1 8.618 7.002l-5.412-1.45a6.082 6.082 0 0 1-7.002 8.618l1.45-5.412Z"></path><path d="M12 12v.01"></path></svg>
+                            <span class="tech-font text-[10px]">AC1</span>
+                            <span id="statusAC1" class="text-[8px] font-bold text-slate-500">OFF</span>
+                        </button>
+                        <button onclick="toggleActuator('AC2')" id="btnAC2" class="interactive-element glass-inner p-4 flex flex-col items-center gap-2 hover:bg-blue-500/20 transition-all border border-white/10">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="wind" aria-hidden="true" class="lucide lucide-wind w-6 h-6 text-slate-400" id="iconAC2"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"></path><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"></path><path d="M9.8 4.4A2 2 0 1 1 11 8H2"></path></svg>
+                            <span class="tech-font text-[10px]">AC2</span>
+                            <span id="statusAC2" class="text-[8px] font-bold text-slate-500">OFF</span>
+                        </button>
+                    </div>
+                    <p id="modeText" class="text-[8px] tech-font text-center text-emerald-500/50 mt-2">SISTEMA LISTO</p>
+                </div>
+            </div>
         </main>
 
-        <footer class="mt-12 text-center border-t border-slate-800 pt-6">
-            <p class="text-[10px] tracking-[0.4em] text-slate-600 font-bold uppercase mb-2">AUTHORS</p>
-            <p class="text-xs text-cyan-500/60 font-mono">PILCO – VELASCO – TORO</p>
-            <p class="text-[9px] text-slate-700 mt-4">IST VIDA NUEVA - INVESTIGACIÓN</p>
+        <footer class="bg-black/80 py-4 text-center border-t border-white/5 backdrop-blur-sm w-full">
+            <p class="text-[10px] text-slate-600 tracking-[0.5em]">IST VIDA NUEVA • INDUSTRIAL SYSTEMS © 2026</p>
         </footer>
     </div>
 
-    <div id="configModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md hidden p-4">
-        <div class="glass-panel p-8 rounded-none w-full max-w-md border-t-4 border-cyan-500 relative">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
-            <h3 class="text-2xl font-black mb-2 flex items-center gap-3 text-cyan-400">
-                <i data-lucide="database" class="w-6 h-6"></i>
-                CORE CONFIG
-            </h3>
-            <p class="text-[10px] text-slate-500 uppercase tracking-widest mb-8">Establish secure uplink to Firebase</p>
-            
-            <div class="space-y-6">
-                <div class="relative">
-                    <label class="block text-[10px] font-black text-cyan-500 mb-2 uppercase tracking-tighter">Encryption API Key</label>
-                    <input type="text" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-950/80 border border-slate-700 rounded-none p-4 text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none text-cyan-100 transition-all font-mono">
-                </div>
-                <div class="relative">
-                    <label class="block text-[10px] font-black text-cyan-500 mb-2 uppercase tracking-tighter">Database Endpoint URL</label>
-                    <input type="text" id="dbUrlInput" placeholder="https://..." class="w-full bg-slate-950/80 border border-slate-700 rounded-none p-4 text-sm focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none text-cyan-100 transition-all font-mono">
-                </div>
-            </div>
+    <script>
+        let db;
+        let currentUser = null;
+        let targetRole = null;
+        let connected = false;
+        const charts = {};
 
-            <div class="mt-10 flex gap-4">
-                <button onclick="closeConfig()" class="flex-1 py-4 text-xs font-bold text-slate-500 hover:text-white transition-colors uppercase tracking-widest">Abort</button>
-                <button onclick="saveConfig()" class="flex-1 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-black py-4 btn-sci-fi">INITIALIZE</button>
-            </div>
-        </div>
-    </div>
+        // --- LÓGICA MODAL FIREBASE ---
+        function openFirebaseModal() {
+            if(connected) return;
+            document.getElementById('firebaseModal').classList.remove('hidden');
+        }
 
-    <script type="module">
-        // Lógica original preservada [cite: 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        function closeFirebaseModal() {
+            document.getElementById('firebaseModal').classList.add('hidden');
+        }
 
-        let app, db;
-        window.openConfig = () => document.getElementById('configModal').classList.remove('hidden');
-        window.closeConfig = () => document.getElementById('configModal').classList.add('hidden');
-        
-        window.saveConfig = () => {
-            const apiKey = document.getElementById('apiKeyInput').value.trim();
-            const dbUrl = document.getElementById('dbUrlInput').value.trim();
-            if(!apiKey || !dbUrl) return Swal.fire({title: 'System Error', text: 'Missing credentials', icon: 'error', background: '#0f172a', color: '#fff'});
-            localStorage.setItem('iot_api_key', apiKey);
-            localStorage.setItem('iot_db_url', dbUrl);
-            initFirebase(apiKey, dbUrl);
-            closeConfig();
-        };
+        function establishConnection() {
+            const key = document.getElementById('fbApiKey').value;
+            const url = document.getElementById('fbDbUrl').value;
 
-        window.updateState = (foco, estado) => {
-            if(!db) return Swal.fire({title: 'Connection Error', text: 'Configure Firebase uplink', icon: 'warning', background: '#0f172a', color: '#fff'});
-            set(ref(db, 'casa/' + foco), estado)
-                .then(() => { if(navigator.vibrate) navigator.vibrate(50); })
-                .catch((error) => Swal.fire('Error', error.message, 'error'));
-        };
+            if(!key || !url) return;
 
-        function initFirebase(apiKey, databaseURL) {
+            const config = {
+                apiKey: key,
+                databaseURL: url,
+                projectId: url.split('https://')[1]?.split('.')[0]
+            };
+
             try {
-                const firebaseConfig = { apiKey, databaseURL };
-                app = initializeApp(firebaseConfig);
-                db = getDatabase(app);
-                const casaRef = ref(db, 'casa');
-                onValue(casaRef, (snapshot) => {
-                    updateStatusUI(true);
-                    const data = snapshot.val();
-                    if(data) {
-                        updateFocoUI('sala', data.sala, 'card1', 'icon1');
-                        updateFocoUI('laboratorio', data.laboratorio, 'card2', 'icon2');
-                    }
-                }, (error) => {
-                    console.error(error);
-                    updateStatusUI(false);
-                });
+                firebase.initializeApp(config);
+                db = firebase.database();
+                connected = true;
+                
+                // UI de éxito
+                document.getElementById('btnText').innerText = "SISTEMA CONECTADO";
+                document.getElementById('btnText').classList.add('text-emerald-400');
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('connectBtn').classList.add('opacity-80');
+                
+                const statusText = document.getElementById('statusText');
+                const dot = document.getElementById('staticDot');
+                statusText.innerText = "ONLINE";
+                statusText.className = "text-[9px] font-bold tech-font text-emerald-500";
+                dot.className = "h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse";
+
+                initDynamicListeners();
+                closeFirebaseModal();
             } catch (e) {
-                updateStatusUI(false);
-                Swal.fire('Error', 'Invalid Credentials', 'error');
+                console.error(e);
             }
         }
 
-        function updateFocoUI(name, state, cardId, iconId) {
-            const card = document.getElementById(cardId);
-            const icon = document.getElementById(iconId);
-            
+        // --- LÓGICA DE SENSORES DINÁMICOS ---
+        function initDynamicListeners() {
+            // Sensores Ilimitados
+            db.ref('sensors').on('value', snap => {
+                const sensorsData = snap.val() || {};
+                const container = document.getElementById('sensorContainer');
+                const currentSensorKeys = Object.keys(sensorsData).filter(k => k !== 'avg');
+
+                // Eliminar los que ya no están
+                const existingElements = container.querySelectorAll('[data-sensor-id]');
+                existingElements.forEach(el => {
+                    const id = el.getAttribute('data-sensor-id');
+                    if (!sensorsData[id]) el.remove();
+                });
+
+                // Agregar o actualizar
+                currentSensorKeys.forEach(id => {
+                    const val = sensorsData[id];
+                    let el = container.querySelector(`[data-sensor-id="${id}"]`);
+                    
+                    if (!el) {
+                        const color = (Object.keys(charts).length % 2 === 0) ? 'blue' : 'red';
+                        container.innerHTML += `
+                            <div class="scifi-panel panel-${color} p-4 group" data-sensor-id="${id}">
+                                <div class="flex justify-between items-center mb-6">
+                                    <div class="flex flex-col">
+                                        <span class="text-[10px] text-white/40 tech-font tracking-widest uppercase">Node ID</span>
+                                        <span class="tech-font text-xs font-bold text-white uppercase">${id}</span>
+                                    </div>
+                                    <div class="p-2 glass-inner"><i data-lucide="activity" class="w-4 h-4 text-white/60"></i></div>
+                                </div>
+                                <div class="text-center mb-6">
+                                    <span id="val-${id}" class="text-5xl font-black tech-font text-white value-glow">--</span>
+                                    <span class="text-lg text-${color}-400/80 tech-font">°C</span>
+                                </div>
+                                <div class="glass-inner p-2 h-20">
+                                    <canvas id="chart-${id}"></canvas>
+                                </div>
+                            </div>`;
+                        lucide.createIcons();
+                        
+                        setTimeout(() => {
+                            const ctx = document.getElementById(`chart-${id}`).getContext('2d');
+                            charts[id] = createChart(ctx, color === 'blue' ? '#00d2ff' : '#ff0055');
+                        }, 100);
+                    }
+
+                    const valEl = document.getElementById(`val-${id}`);
+                    if (valEl) valEl.innerText = typeof val === 'number' ? val.toFixed(1) : val;
+                    updateChart(id, val);
+                });
+
+                // Promedio
+                if (sensorsData.avg !== undefined) {
+                    document.getElementById('valAvg').innerText = sensorsData.avg.toFixed(1);
+                    updateChart('Avg', sensorsData.avg);
+                    updateThermalUI(sensorsData.avg);
+                }
+            });
+
+            // Actuadores
+            db.ref('actuators').on('value', snap => {
+                const data = snap.val() || {};
+                updateActuatorUI('AC1', data.AC1);
+                updateActuatorUI('AC2', data.AC2);
+            });
+        }
+
+        // --- FUNCIONES CORE (Navegación / UI) ---
+        function openAuth(role) {
+            targetRole = role;
+            document.getElementById('modalTitle').innerText = `ACCESO ${role}`;
+            document.getElementById('passwordModal').classList.remove('hidden');
+            document.getElementById('passInput').focus();
+        }
+
+        function closeAuth() {
+            document.getElementById('passwordModal').classList.add('hidden');
+            document.getElementById('passInput').value = '';
+        }
+
+        function verifyPass() {
+            const pass = document.getElementById('passInput').value.toUpperCase();
+            if (pass === targetRole) {
+                login(targetRole);
+            } else {
+                alert("ACCESO DENEGADO");
+            }
+        }
+
+        function login(role) {
+            currentUser = role;
+            closeAuth();
+            document.getElementById('homeScreen').classList.remove('active');
+            document.getElementById('mainPanel').classList.add('active');
+            updateUIMode();
+        }
+
+        function updateUIMode() {
+            const panel = document.getElementById('mainPanel');
+            const label = document.getElementById('roleLabel');
+            if (currentUser === 'ADMINISTRADOR') {
+                panel.classList.remove('operario-mode');
+                label.innerText = "ADMINISTRATOR CONTROL PANEL";
+            } else {
+                panel.classList.add('operario-mode');
+                label.innerText = "OPERATOR VIEW ONLY";
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('mainPanel').classList.remove('active');
+            document.getElementById('homeScreen').classList.add('active');
+        }
+
+        function switchToOperator() {
+            currentUser = 'OPERARIO';
+            updateUIMode();
+        }
+
+        function switchToAdmin() {
+            const p = prompt("Contraseña:");
+            if(p === 'ADMINISTRADOR') { currentUser = 'ADMINISTRADOR'; updateUIMode(); }
+        }
+
+        function toggleActuator(id) {
+            if(currentUser !== 'ADMINISTRADOR' || !connected) return;
+            const statusLabel = document.getElementById(`status${id}`).innerText;
+            const newState = statusLabel === "OFF";
+            db.ref(`actuators/${id}`).set(newState);
+        }
+
+        function updateActuatorUI(id, state) {
+            const btn = document.getElementById(`btn${id}`);
+            const icon = document.getElementById(`icon${id}`);
+            const status = document.getElementById(`status${id}`);
             if(state) {
-                card.classList.add('glow-on');
-                icon.classList.add('text-cyan-400', 'drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]');
-                icon.classList.remove('text-slate-700');
+                btn.classList.add('bg-blue-500/20', 'border-blue-500');
+                icon.classList.replace('text-slate-400', 'text-blue-400');
+                if(id === 'AC1') icon.classList.add('animate-spin');
+                status.innerText = "RUNNING";
+                status.classList.replace('text-slate-500', 'text-blue-400');
             } else {
-                card.classList.remove('glow-on');
-                icon.classList.remove('text-cyan-400', 'drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]');
-                icon.classList.add('text-slate-700');
+                btn.classList.remove('bg-blue-500/20', 'border-blue-500');
+                icon.classList.replace('text-blue-400', 'text-slate-400');
+                icon.classList.remove('animate-spin');
+                status.innerText = "OFF";
+                status.classList.replace('text-blue-400', 'text-slate-500');
             }
         }
 
-        function updateStatusUI(connected) {
-            const el = document.getElementById('statusIndicator');
-            if(connected) {
-                el.className = "mb-10 flex items-center gap-4 bg-emerald-500/5 border-l-4 border-emerald-500 p-4 rounded-r-lg backdrop-blur-md relative overflow-hidden transition-all";
-                el.innerHTML = `
-                    <div class="scan-line" style="background: linear-gradient(90deg, transparent, #10b981, transparent)"></div>
-                    <span class="relative flex h-4 w-4">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 shadow-[0_0_10px_#10b981]"></span>
-                    </span>
-                    <div class="flex flex-col">
-                        <span class="text-[10px] uppercase text-slate-500 font-bold">System Status</span>
-                        <span class="text-sm font-bold text-emerald-400 tracking-widest uppercase">Link Stable</span>
-                    </div>`;
-            } else {
-                el.className = "mb-10 flex items-center gap-4 bg-red-500/5 border-l-4 border-red-500 p-4 rounded-r-lg backdrop-blur-md relative overflow-hidden transition-all";
-                el.innerHTML = `<span class="h-4 w-4 rounded-full bg-red-600 shadow-[0_0_10px_#dc2626]"></span><div class="flex flex-col"><span class="text-[10px] uppercase text-slate-500 font-bold">System Status</span><span class="text-sm font-bold text-red-400 tracking-widest uppercase">Link Offline</span></div>`;
-            }
+        // --- GRÁFICAS Y RELOJ ---
+        function createChart(ctx, color) {
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array(20).fill(''),
+                    datasets: [{
+                        data: Array(20).fill(null),
+                        borderColor: color,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: (c) => {
+                            const g = c.chart.ctx.createLinearGradient(0, 0, 0, 100);
+                            g.addColorStop(0, color + '33');
+                            g.addColorStop(1, 'transparent');
+                            return g;
+                        }
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
+            });
         }
 
-        lucide.createIcons();
-        const savedKey = localStorage.getItem('iot_api_key');
-        const savedUrl = localStorage.getItem('iot_db_url');
-        if(savedKey && savedUrl) {
-            document.getElementById('apiKeyInput').value = savedKey;
-            document.getElementById('dbUrlInput').value = savedUrl;
-            initFirebase(savedKey, savedUrl);
-        } else {
-            setTimeout(openConfig, 1000);
+        function updateChart(id, val) {
+            if(!charts[id]) return;
+            charts[id].data.datasets[0].data.push(val);
+            charts[id].data.datasets[0].data.shift();
+            charts[id].update('none');
         }
+
+        function updateThermalUI(avg) {
+            const fill = document.getElementById('thermalFill');
+            const percentage = Math.min(100, Math.max(0, (avg / 50) * 100));
+            fill.style.height = percentage + '%';
+            if(avg > 30) fill.style.background = 'var(--neon-red)';
+            else if(avg > 20) fill.style.background = 'var(--neon-green)';
+            else fill.style.background = 'var(--neon-blue)';
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('dateDisplay').textContent = now.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+            document.getElementById('timeDisplay').textContent = now.toLocaleTimeString('es-ES', { hour12: false });
+        }
+
+        window.onload = () => {
+            charts['Avg'] = createChart(document.getElementById('chartAvg').getContext('2d'), '#39ff14');
+            lucide.createIcons();
+            setInterval(updateClock, 1000);
+        };
+
+        document.getElementById('passInput').addEventListener('keypress', e => e.key === 'Enter' && verifyPass());
     </script>
-</body>
-</html>
+
+</body></html>
