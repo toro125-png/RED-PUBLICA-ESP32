@@ -124,7 +124,7 @@
         <div class="status-header">
             <div class="stat-box">
                 <small>ESTADO SISTEMA</small>
-                <div id="adm-mode-val" class="mode-badge auto-on" style="margin-top:10px; display:inline-block;">AUTOMÁTICO</div>
+                <div id="adm-mode-val" class="mode-badge manual-on" style="margin-top:10px; display:inline-block;">MANUAL</div>
             </div>
             <div class="stat-box">
                 <small>PROMEDIO GLOBAL</small>
@@ -152,11 +152,11 @@
             <h3 style="margin-bottom:15px; font-size:0.8rem;">CONTROL MANUAL DE SISTEMA</h3>
             <div style="display:flex; gap:20px; align-items:center;">
                 <p>MODO MANUAL:</p>
-                <button id="btn-toggle-manual" class="btn btn-sm" onclick="setManualMode()">ACTIVAR</button>
+                <button id="btn-toggle-manual" class="btn btn-sm btn-red" onclick="setManualMode()">DESACTIVAR</button>
             </div>
         </div>
 
-        <div class="control-panel disabled-ui" id="manual-controls">
+        <div class="control-panel" id="manual-controls">
             <div class="actuator-ctrl">
                 <h3>ACTUADOR 1</h3>
                 <div id="adm-st-1" class="temp-val">ON</div>
@@ -189,7 +189,7 @@
             </div>
             <div class="stat-box">
                 <small>MODO</small>
-                <div id="opr-mode" style="font-weight:bold; margin-top:5px;">AUTO</div>
+                <div id="opr-mode" style="font-weight:bold; margin-top:5px;">MANUAL</div>
             </div>
         </div>
 
